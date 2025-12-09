@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 
@@ -24,7 +24,7 @@ export default function Buses() {
   const [buses, setBuses] = useState<Bus[]>([]);
   const [showDelete, setShowDelete] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
-  const [selectedBus, setSelectedBus] = useState<number | null>(null);
+  const [selectedBus] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [editingBus, setEditingBus] = useState<Bus | null>(null);
@@ -133,7 +133,7 @@ export default function Buses() {
     }
 
     try {
-      const response = await axios.post(
+      await axios.post(
         `${API_URL}/buses/${editingBus.id}`,
         editingBus,
         {

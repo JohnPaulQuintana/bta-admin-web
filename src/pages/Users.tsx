@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 const API_URL = import.meta.env.VITE_API_URL;
@@ -24,32 +24,32 @@ interface Notification {
   message: string;
   type: "success" | "error";
 }
-const initialUsers = [
-  {
-    id: 1,
-    name: "Admin Account",
-    email: "admin@app.com",
-    role: "admin",
-    created_at: "2025-01-15",
-    status: "active",
-  },
-  {
-    id: 2,
-    name: "User One",
-    email: "user1@app.com",
-    role: "user",
-    created_at: "2025-02-20",
-    status: "active",
-  },
-  {
-    id: 3,
-    name: "User Two",
-    email: "user2@app.com",
-    role: "user",
-    created_at: "2025-03-10",
-    status: "inactive",
-  },
-];
+// const initialUsers = [
+//   {
+//     id: 1,
+//     name: "Admin Account",
+//     email: "admin@app.com",
+//     role: "admin",
+//     created_at: "2025-01-15",
+//     status: "active",
+//   },
+//   {
+//     id: 2,
+//     name: "User One",
+//     email: "user1@app.com",
+//     role: "user",
+//     created_at: "2025-02-20",
+//     status: "active",
+//   },
+//   {
+//     id: 3,
+//     name: "User Two",
+//     email: "user2@app.com",
+//     role: "user",
+//     created_at: "2025-03-10",
+//     status: "inactive",
+//   },
+// ];
 
 export default function Users() {
   const [users, setUsers] = useState<User[]>([]);
@@ -59,30 +59,31 @@ export default function Users() {
   const [showDelete, setShowDelete] = useState(false);
   const [selectedUser, setSelectedUser] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notification, setNotifications] = useState<Notification[]>([]);
   const { token } = useAuth();
-
+  console.log(loading)
+  console.log(notification)
   const handleDelete = (id: number) => {
     setUsers(users.filter((user) => user.id !== id));
     setShowDelete(false);
   };
 
-  const handleAdd = () => {
-    const name = prompt("User Name");
-    const email = prompt("Email");
-    const role = prompt("Role (admin/user)");
-    if (!name || !email || !role) return;
+  // const handleAdd = () => {
+  //   const name = prompt("User Name");
+  //   const email = prompt("Email");
+  //   const role = prompt("Role (admin/user)");
+  //   if (!name || !email || !role) return;
 
-    const newUser = {
-      id: users.length + 1,
-      name: name,
-      email: email,
-      role: role.toLowerCase(),
-      created_at: new Date().toISOString().split("T")[0],
-      status: "active",
-    };
-    setUsers([...users, newUser]);
-  };
+  //   const newUser = {
+  //     id: users.length + 1,
+  //     name: name,
+  //     email: email,
+  //     role: role.toLowerCase(),
+  //     created_at: new Date().toISOString().split("T")[0],
+  //     status: "active",
+  //   };
+  //   setUsers([...users, newUser]);
+  // };
 
   // Add notification
   const addNotification = (message: string, type: "success" | "error") => {
@@ -111,11 +112,16 @@ export default function Users() {
         id: u.id,
         name: u.name,
         email: u.email,
-        role: u.role?.name || "user",
-        status: "active",
+        role_id: u.role?.id || 0,
+        role: {
+          id: u.role?.id || 0,
+          name: u.role?.name || "user",
+        },
+        status: u.status || "active",
         created_at: u.created_at,
         updated_at: u.updated_at,
       }));
+
       console.log(formatted);
       setUsers(formatted);
       setCurrentPage(response.data.data.current_page);
@@ -311,7 +317,8 @@ export default function Users() {
                         }`}
                       ></span>
 
-                      {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                      {user.role.name.charAt(0).toUpperCase() + user.role.name.slice(1)}
+
                     </span>
                   </td>
                   <td className="px-4 md:px-6 py-3 md:py-4">

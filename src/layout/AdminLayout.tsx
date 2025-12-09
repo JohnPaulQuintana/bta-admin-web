@@ -39,7 +39,7 @@ export default function AdminLayout() {
     },
   ];
 
-  const currentPage = links.find((link) => link.to === location.pathname)?.name || "";
+  // const currentPage = links.find((link) => link.to === location.pathname)?.name || "";
 
   // Get first letter of user name
   const profileLetter = user?.name?.[0]?.toUpperCase() || "?";
