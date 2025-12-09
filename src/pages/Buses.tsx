@@ -53,25 +53,24 @@ export default function Buses() {
   };
 
   // Fetch buses on mount
+  const fetchBuses = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${API_URL}/buses`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setBuses(response.data.data || response.data);
+      addNotification("Buses loaded successfully", "success");
+    } catch (err) {
+      console.error("Failed to fetch buses:", err);
+      addNotification("Failed to fetch buses. Please try again.", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
   useEffect(() => {
-    const fetchBuses = async () => {
-      try {
-        setLoading(true);
-        const response = await axios.get(`${API_URL}/buses`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        setBuses(response.data.data || response.data);
-        addNotification("Buses loaded successfully", "success");
-      } catch (err) {
-        console.error("Failed to fetch buses:", err);
-        addNotification("Failed to fetch buses. Please try again.", "error");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     if (token) {
       fetchBuses();
     }
@@ -116,6 +115,7 @@ export default function Buses() {
         is_active: true,
       });
       addNotification("Bus added successfully", "success");
+      fetchBuses();
     } catch (err: any) {
       console.error("Failed to add bus:", err);
       const errorMsg =
@@ -133,15 +133,11 @@ export default function Buses() {
     }
 
     try {
-      await axios.post(
-        `${API_URL}/buses/${editingBus.id}`,
-        editingBus,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      await axios.post(`${API_URL}/buses/${editingBus.id}`, editingBus, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       // Alternative: Update the bus in state manually
       setBuses((prevBuses) =>
@@ -159,6 +155,7 @@ export default function Buses() {
       setShowEdit(false);
       setEditingBus(null);
       addNotification("Bus updated successfully", "success");
+      fetchBuses();
     } catch (err: any) {
       console.error("Failed to update bus:", err);
       const errorMsg =
