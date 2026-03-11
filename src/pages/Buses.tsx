@@ -7,8 +7,12 @@ const API_URL = import.meta.env.VITE_API_URL;
 interface Bus {
   id: number;
   bus_name: string;
+  bus_capacity: number;
   driver_name: string;
-  license_plate: string;
+  license_no: string;
+  plate_no: string;
+  total_drivers: number;
+  business_name: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -32,13 +36,27 @@ export default function Buses() {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 5; // Number of buses per page
 
-  const { token } = useAuth();
+  const { token, user } = useAuth();
 
   const [form, setForm] = useState({
+    business_id: user?.business_id,
     bus_name: "",
-    driver_name: "",
+    bus_capacity: 0,
     license_plate: "",
     is_active: true,
+    drivers: [
+      {
+        role: "driver",
+        business_id: user?.business_id,
+        name: "",
+        license_no: "",
+        email: "",
+        phone_no: "",
+        bus_id: "",
+        plate_no: "",
+        password: "",
+      }, // start with 1 driver
+    ],
   });
 
   // Add notification
@@ -56,11 +74,14 @@ export default function Buses() {
   const fetchBuses = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_URL}/buses`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
+      const response = await axios.get(
+        `${API_URL}/buses?role_id=${user?.role.id}&business_id=${user?.business_id}&role=${user?.role.name}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         },
-      });
+      );
       setBuses(response.data.data || response.data);
       addNotification("Buses loaded successfully", "success");
     } catch (err) {
@@ -105,16 +126,58 @@ export default function Buses() {
           Authorization: `Bearer ${token}`,
         },
       });
-      const newBus = response.data;
+      const newBus = response.data.data;
       setBuses([...buses, newBus]);
-      setShowAdd(false);
+      addNotification("Bus added successfully", "success");
+
+      // Register each driver for this bus
+      for (const driver of form.drivers) {
+        if (
+          !driver.business_id ||
+          !driver.name ||
+          !driver.email ||
+          !driver.password
+        )
+          continue; // skip incomplete
+
+        await axios.post(`${API_URL}/auth/register`, {
+          role: driver.role,
+          business_id: driver.business_id,
+          name: driver.name,
+          license_no: driver.license_no,
+          email: driver.email,
+          phone_no: driver.phone_no,
+          password: driver.password,
+          bus_id: newBus.id, // associate driver with the bus
+          plate_no: driver.plate_no,
+        });
+      }
+
+      addNotification("Drivers registered successfully", "success");
+
+      // Reset form and close modal
       setForm({
+        business_id: user?.business_id,
         bus_name: "",
-        driver_name: "",
+        bus_capacity: 0,
+        drivers: [
+          {
+            role: "driver",
+            business_id: user?.business_id,
+            name: "",
+            license_no: "",
+            email: "",
+            phone_no: "",
+            bus_id: "",
+            plate_no: "",
+            password: "",
+          },
+        ],
         license_plate: "",
         is_active: true,
       });
-      addNotification("Bus added successfully", "success");
+      setShowAdd(false);
+
       fetchBuses();
     } catch (err: any) {
       console.error("Failed to add bus:", err);
@@ -132,24 +195,45 @@ export default function Buses() {
       return;
     }
 
+    console.log(editingBus);
     try {
-      await axios.post(`${API_URL}/buses/${editingBus.id}`, editingBus, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      // 1️⃣ Update Bus table
+      const busPayload = {
+        bus_name: editingBus.bus_name,
+        bus_capacity: editingBus.bus_capacity,
+        is_active: editingBus.is_active,
+      };
+
+      await axios.post(`${API_URL}/buses/${editingBus.id}`, busPayload, {
+        headers: { Authorization: `Bearer ${token}` },
       });
 
+      // 2️⃣ Update Users table (driver's plate_no)
+      if (editingBus.plate_no) {
+        await axios.post(
+          `${API_URL}/users/${editingBus.id}`,
+          {
+            plate_no: editingBus.plate_no,
+          },
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
+      }
+
       // Alternative: Update the bus in state manually
+      // Update state locally
       setBuses((prevBuses) =>
         prevBuses.map((bus) =>
           bus.id === editingBus.id
             ? {
                 ...bus,
-                ...editingBus, // Spread the edited data
-                updated_at: new Date().toISOString(), // Update timestamp
+                ...busPayload,
+                license_plate: editingBus.plate_no,
+                updated_at: new Date().toISOString(),
               }
-            : bus
-        )
+            : bus,
+        ),
       );
 
       setShowEdit(false);
@@ -180,13 +264,13 @@ export default function Buses() {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       setBuses(buses.map((b) => (b.id === bus.id ? response.data : b)));
       addNotification(
         `Bus ${!bus.is_active ? "activated" : "deactivated"} successfully`,
-        "success"
+        "success",
       );
     } catch (err: any) {
       console.error("Failed to update bus status:", err);
@@ -199,11 +283,12 @@ export default function Buses() {
 
   const paginatedBuses = buses.slice(
     (currentPage - 1) * pageSize,
-    currentPage * pageSize
+    currentPage * pageSize,
   );
 
   const totalPages = Math.ceil(buses.length / pageSize);
 
+  console.log(user?.role_id);
   return (
     <div className="w-full mt-12 md:mt-0 p-2">
       {/* Notifications */}
@@ -311,27 +396,29 @@ export default function Buses() {
             </p>
           </div>
 
-          <div>
-            <button
-              onClick={() => setShowAdd(true)}
-              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 md:px-6 md:py-3 rounded-lg md:rounded-xl font-medium transition-all duration-300 shadow-sm hover:shadow-md active:scale-95 w-full md:w-auto justify-center"
-            >
-              <svg
-                className="w-4 h-4 md:w-5 md:h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+          {user?.role.id !== 2 && (
+            <div>
+              <button
+                onClick={() => setShowAdd(true)}
+                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 md:px-6 md:py-3 rounded-lg md:rounded-xl font-medium transition-all duration-300 shadow-sm hover:shadow-md active:scale-95 w-full md:w-auto justify-center"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-              Add New Bus
-            </button>
-          </div>
+                <svg
+                  className="w-4 h-4 md:w-5 md:h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                Add New Bus
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="overflow-x-auto">
@@ -354,14 +441,26 @@ export default function Buses() {
                     BUS NAME
                   </span>
                 </th>
-                {/* <th className="px-4 md:px-6 py-3 md:py-4 text-left min-w-[180px]">
+                {user?.role.id !== 3 && (
+                  <th className="uppercase px-4 md:px-6 py-3 md:py-4 text-left min-w-[180px]">
+                    <span className="text-gray-600 font-medium text-xs md:text-sm tracking-wider">
+                      Business Name
+                    </span>
+                  </th>
+                )}
+                <th className="px-4 md:px-6 py-3 md:py-4 text-left min-w-[180px]">
                   <span className="text-gray-600 font-medium text-xs md:text-sm tracking-wider">
-                    DRIVER
+                    CAPACITY
                   </span>
-                </th> */}
+                </th>
                 <th className="px-4 md:px-6 py-3 md:py-4 text-left min-w-[150px]">
                   <span className="text-gray-600 font-medium text-xs md:text-sm tracking-wider">
-                    LICENSE PLATE
+                    PLATE NO.
+                  </span>
+                </th>
+                <th className="px-4 md:px-6 py-3 md:py-4 text-left min-w-[150px]">
+                  <span className="text-gray-600 font-medium text-xs md:text-sm tracking-wider">
+                    DRIVER'S
                   </span>
                 </th>
                 <th className="px-4 md:px-6 py-3 md:py-4 text-left min-w-[120px]">
@@ -380,11 +479,13 @@ export default function Buses() {
                     UPDATED
                   </span>
                 </th>
-                <th className="px-4 md:px-6 py-3 md:py-4 text-left min-w-[180px]">
-                  <span className="text-gray-600 font-medium text-xs md:text-sm tracking-wider">
-                    ACTIONS
-                  </span>
-                </th>
+                {user?.role.id !== 2 && (
+                  <th className="px-4 md:px-6 py-3 md:py-4 text-left min-w-[180px]">
+                    <span className="text-gray-600 font-medium text-xs md:text-sm tracking-wider">
+                      ACTIONS
+                    </span>
+                  </th>
+                )}
               </tr>
             </thead>
 
@@ -413,12 +514,6 @@ export default function Buses() {
                     key={bus.id}
                     className="hover:bg-gray-50 transition-colors duration-200"
                   >
-                    <td className="px-4 md:px-6 py-3 md:py-4">
-                      <span className="text-green-800 text-sm">
-                        {`https://ex-en.tech/api/buses/${bus.id}/location`}
-                      </span>
-                    </td>
-
                     {/* <td className="px-4 md:px-6 py-3 md:py-4">
                       <span className="inline-flex items-center justify-center w-6 h-6 md:w-8 md:h-8 rounded-lg bg-gray-100 text-gray-700 font-medium text-xs md:text-sm">
                         {bus.id}
@@ -441,38 +536,43 @@ export default function Buses() {
                             />
                           </svg>
                         </div>
-                        <span className="font-medium text-gray-800 text-sm md:text-base">
-                          {bus.bus_name}
+                        <span className="font-medium text-green-800 text-sm md:text-base">
+                          {`https://ex-en.tech/api/buses/${bus.id}/location`}
                         </span>
                       </div>
                     </td>
-                    {/* <td className="px-4 md:px-6 py-3 md:py-4">
-                      <div className="flex items-center gap-2 md:gap-3">
-                        <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center">
-                          <svg
-                            className="w-3 h-3 md:w-4 md:h-4 text-gray-500"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                            />
-                          </svg>
-                        </div>
-                        <span className="text-gray-700 text-sm md:text-base">
-                          {bus.driver_name || "—"}
-                        </span>
-                      </div>
-                    </td> */}
+
                     <td className="px-4 md:px-6 py-3 md:py-4">
-                      <span className="px-2 py-1 md:px-3 md:py-1.5 bg-gray-100 rounded-lg text-gray-700 font-mono text-xs md:text-sm border border-gray-200">
-                        {bus.license_plate || "—"}
+                      <span className="text-sm">
+                          {bus.bus_name}
                       </span>
                     </td>
+                    <td className="px-4 md:px-6 py-3 md:py-4">
+                      <span className="text-sm">
+                          {bus.bus_capacity}
+                      </span>
+                    </td>
+
+                    {user?.role.id !== 3 && (
+                      <td className="px-4 md:px-6 py-3 md:py-4">
+                        <span className="px-2 py-1 md:px-3 md:py-1.5 bg-gray-100 rounded-lg text-gray-700 font-mono text-xs md:text-sm border border-gray-200">
+                          {bus.business_name || "0"}
+                        </span>
+                      </td>
+                    )}
+
+                    <td className="px-4 md:px-6 py-3 md:py-4">
+                      <span className="px-2 py-1 md:px-3 md:py-1.5 bg-gray-100 rounded-lg text-gray-700 font-mono text-xs md:text-sm border border-gray-200">
+                        {bus.plate_no || "—"}
+                      </span>
+                    </td>
+
+                    <td className="px-4 md:px-6 py-3 md:py-4">
+                      <span className="px-2 py-1 md:px-3 md:py-1.5 bg-gray-100 rounded-lg text-gray-700 font-mono text-xs md:text-sm border border-gray-200">
+                        {bus.total_drivers || "0"}
+                      </span>
+                    </td>
+
                     <td className="px-4 md:px-6 py-3 md:py-4">
                       <button
                         onClick={() => toggleBusStatus(bus)}
@@ -501,7 +601,7 @@ export default function Buses() {
                                   year: "numeric",
                                   month: "short",
                                   day: "numeric",
-                                }
+                                },
                               )
                             : "—"}
                         </div>
@@ -518,7 +618,7 @@ export default function Buses() {
                                   year: "numeric",
                                   month: "short",
                                   day: "numeric",
-                                }
+                                },
                               )
                             : "—"}
                         </div>
@@ -527,28 +627,29 @@ export default function Buses() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 md:px-6 py-3 md:py-4">
-                      <div className="flex items-center gap-1 md:gap-2">
-                        <button
-                          onClick={() => handleEditClick(bus)}
-                          className="flex items-center gap-1 px-2 py-1.5 md:px-3 md:py-2 text-xs md:text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-                        >
-                          <svg
-                            className="w-3 h-3 md:w-4 md:h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
+                    {user?.role.id !== 2 && (
+                      <td className="px-4 md:px-6 py-3 md:py-4">
+                        <div className="flex items-center gap-1 md:gap-2">
+                          <button
+                            onClick={() => handleEditClick(bus)}
+                            className="flex items-center gap-1 px-2 py-1.5 md:px-3 md:py-2 text-xs md:text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                            />
-                          </svg>
-                          Edit
-                        </button>
-                        {/* <button
+                            <svg
+                              className="w-3 h-3 md:w-4 md:h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                              />
+                            </svg>
+                            Edit
+                          </button>
+                          {/* <button
                           onClick={() => {
                             setSelectedBus(bus.id);
                             setShowDelete(true);
@@ -570,8 +671,9 @@ export default function Buses() {
                           </svg>
                           Delete
                         </button> */}
-                      </div>
-                    </td>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))
               )}
@@ -635,53 +737,165 @@ export default function Buses() {
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
                 />
               </div>
+              <div className="flex items-center gap-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Bus Capacity <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="Enter bus capacity"
+                    value={form.bus_capacity}
+                    min={1}
+                    max={30}
+                    onChange={(e) =>
+                      setForm({ ...form, bus_capacity: Number(e.target.value) })
+                    }
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Capacity must be between 1 and 30 passengers.
+                  </p>
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Driver Name
-                </label>
-                <input
-                  type="text"
-                  placeholder="Enter driver name"
-                  value={form.driver_name}
-                  onChange={(e) =>
-                    setForm({ ...form, driver_name: e.target.value })
-                  }
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
-                />
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    id="is_active_add"
+                    checked={form.is_active}
+                    onChange={(e) =>
+                      setForm({ ...form, is_active: e.target.checked })
+                    }
+                    className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
+                  />
+                  <label
+                    htmlFor="is_active_add"
+                    className="text-sm text-gray-700"
+                  >
+                    Active
+                  </label>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  License Plate <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="Enter license plate"
-                  value={form.license_plate}
-                  onChange={(e) =>
-                    setForm({ ...form, license_plate: e.target.value })
-                  }
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
-                />
-              </div>
+              <div className="space-y-4 max-h-[40vh] overflow-y-auto">
+                {form.drivers.map((driver, index) => (
+                  <div
+                    key={index}
+                    className="p-3 border border-gray-200 rounded-lg space-y-2 relative"
+                  >
+                    <h3 className="font-medium text-gray-700 text-sm">
+                      Assigned Driver {index + 1}
+                    </h3>
 
-              <div className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  id="is_active_add"
-                  checked={form.is_active}
-                  onChange={(e) =>
-                    setForm({ ...form, is_active: e.target.checked })
+                    {form.drivers.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newDrivers = [...form.drivers];
+                          newDrivers.splice(index, 1);
+                          setForm({ ...form, drivers: newDrivers });
+                        }}
+                        className="absolute top-2 right-2 text-red-500 text-xs hover:underline"
+                      >
+                        Remove
+                      </button>
+                    )}
+
+                    <input
+                      type="text"
+                      placeholder="Driver name"
+                      value={driver.name}
+                      onChange={(e) => {
+                        const newDrivers = [...form.drivers];
+                        newDrivers[index].name = e.target.value;
+                        setForm({ ...form, drivers: newDrivers });
+                      }}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+                    />
+                    <input
+                      type="text"
+                      placeholder="License No."
+                      value={driver.license_no}
+                      onChange={(e) => {
+                        const newDrivers = [...form.drivers];
+                        newDrivers[index].license_no = e.target.value;
+                        setForm({ ...form, drivers: newDrivers });
+                      }}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+                    />
+                    <input
+                      type="email"
+                      placeholder="Email"
+                      value={driver.email}
+                      onChange={(e) => {
+                        const newDrivers = [...form.drivers];
+                        newDrivers[index].email = e.target.value;
+                        setForm({ ...form, drivers: newDrivers });
+                      }}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Phone Number"
+                      value={driver.phone_no}
+                      onChange={(e) => {
+                        const newDrivers = [...form.drivers];
+                        newDrivers[index].phone_no = e.target.value;
+                        setForm({ ...form, drivers: newDrivers });
+                      }}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+                    />
+
+                    <input
+                      type="text"
+                      placeholder="Plate No."
+                      value={driver.plate_no}
+                      onChange={(e) => {
+                        const newDrivers = [...form.drivers];
+                        newDrivers[index].plate_no = e.target.value;
+                        setForm({ ...form, drivers: newDrivers });
+                      }}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+                    />
+                    <input
+                      type="password"
+                      placeholder="Password"
+                      value={driver.password}
+                      onChange={(e) => {
+                        const newDrivers = [...form.drivers];
+                        newDrivers[index].password = e.target.value;
+                        setForm({ ...form, drivers: newDrivers });
+                      }}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+                    />
+                  </div>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setForm({
+                      ...form,
+                      drivers: [
+                        ...form.drivers,
+                        {
+                          role: "driver",
+                          business_id: user?.business_id,
+                          name: "",
+                          license_no: "",
+                          email: "",
+                          phone_no: "",
+                          bus_id: "",
+                          plate_no: "",
+                          password: "",
+                        },
+                      ],
+                    })
                   }
-                  className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
-                />
-                <label
-                  htmlFor="is_active_add"
-                  className="text-sm text-gray-700"
+                  className="text-green-600 text-sm hover:underline"
                 >
-                  Active
-                </label>
+                  + Add Another Driver
+                </button>
               </div>
             </div>
 
@@ -733,34 +947,37 @@ export default function Buses() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Driver Name
+                  Bus Capacity <span className="text-red-500">*</span>
                 </label>
                 <input
-                  type="text"
-                  placeholder="Enter driver name"
-                  value={editingBus.driver_name}
+                  type="number"
+                  placeholder="Enter bus capacity"
+                  value={editingBus.bus_capacity}
                   onChange={(e) =>
                     setEditingBus({
                       ...editingBus,
-                      driver_name: e.target.value,
+                      bus_capacity: Number(e.target.value),
                     })
                   }
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Capacity must be between 1 and 30 passengers.
+                </p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  License Plate <span className="text-red-500">*</span>
+                  Plate Number <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   placeholder="Enter license plate"
-                  value={editingBus.license_plate}
+                  value={editingBus.plate_no}
                   onChange={(e) =>
                     setEditingBus({
                       ...editingBus,
-                      license_plate: e.target.value,
+                      plate_no: e.target.value,
                     })
                   }
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"

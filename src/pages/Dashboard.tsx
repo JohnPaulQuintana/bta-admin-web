@@ -1,10 +1,14 @@
+import { useAuth } from "../context/AuthContext";
+
 export default function Dashboard() {
+  const { user } = useAuth();
+
   return (
     <div className="min-h-[calc(100vh-100px)] flex items-center justify-center p-6 mt-14 md:mt-0">
       <div className="text-center max-w-2xl">
         {/* Welcome Message */}
-        <h1 className="text-2xl md:text-5xl font-bold text-green-600 mb-6">
-          Welcome to Bus Tracker Admin
+        <h1 className="text-2xl md:text-5xl font-bold text-green-600 mb-6 uppercase">
+          Welcome to Bus Tracker {user?.role?.name}
         </h1>
         
         {/* Subtitle */}

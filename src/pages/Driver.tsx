@@ -3,8 +3,12 @@ import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 const API_URL = import.meta.env.VITE_API_URL;
 
-interface User {
+interface Driver {
   id: number;
+  license_no: string;
+  phone_no: string;
+  bus_name: string;
+  plate_no: string;
   name: string;
   email: string;
   role_id: number;
@@ -26,14 +30,14 @@ interface Notification {
   type: "success" | "error";
 }
 
-const roleColors: Record<string, string> = {
-  operator: "bg-red-50 text-red-600 border-red-200",
-  driver: "bg-blue-50 text-blue-600 border-blue-200",
-  user: "bg-green-50 text-green-600 border-green-200",
-};
+// const roleColors: Record<string, string> = {
+//   operator: "bg-red-50 text-red-600 border-red-200",
+//   driver: "bg-blue-50 text-blue-600 border-blue-200",
+//   user: "bg-green-50 text-green-600 border-green-200",
+// };
 
-export default function Users() {
-  const [users, setUsers] = useState<User[]>([]);
+export default function Drivers() {
+  const [users, setUsers] = useState<Driver[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -48,23 +52,6 @@ export default function Users() {
     setUsers(users.filter((user) => user.id !== id));
     setShowDelete(false);
   };
-
-  // const handleAdd = () => {
-  //   const name = prompt("User Name");
-  //   const email = prompt("Email");
-  //   const role = prompt("Role (admin/user)");
-  //   if (!name || !email || !role) return;
-
-  //   const newUser = {
-  //     id: users.length + 1,
-  //     name: name,
-  //     email: email,
-  //     role: role.toLowerCase(),
-  //     created_at: new Date().toISOString().split("T")[0],
-  //     status: "active",
-  //   };
-  //   setUsers([...users, newUser]);
-  // };
 
   // Add notification
   const addNotification = (message: string, type: "success" | "error") => {
@@ -81,7 +68,7 @@ export default function Users() {
   const fetchUsers = async (page = 1) => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_URL}/bta/users?page=${page}`, {
+      const response = await axios.get(`${API_URL}/bta/users/driver?page=${page}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -91,6 +78,10 @@ export default function Users() {
       console.log(apiUsers);
       const formatted = apiUsers.map((u: any) => ({
         id: u.id,
+        bus_name: u.bus_name,
+        license_no: u.license_no,
+        phone_no: u.phone_no,
+        plate_no: u.plate_no,
         name: u.name,
         email: u.email,
         role_id: u.role?.id || 0,
@@ -98,7 +89,7 @@ export default function Users() {
           id: u.role?.id || 0,
           name: u.role?.name || "user",
         },
-        business_name: u.business_name || "Unknown", 
+        business_name: u.business_name || "Unknown",
         status: u.status || "active",
         created_at: u.created_at,
         updated_at: u.updated_at,
@@ -127,42 +118,11 @@ export default function Users() {
 
   return (
     <div className="p-2 mt-12 md:mt-0 w-full">
-      {/* Header */}
-      {/* <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 md:mb-8 gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
-            User Management
-          </h1>
-          <p className="text-gray-600 mt-1 text-sm md:text-base">
-            Manage system users and permissions
-          </p>
-        </div>
-        <button
-          onClick={handleAdd}
-          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 md:px-6 md:py-3 rounded-lg md:rounded-xl font-medium transition-all duration-300 shadow-sm hover:shadow-md active:scale-95 w-full md:w-auto justify-center"
-        >
-          <svg
-            className="w-4 h-4 md:w-5 md:h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 4v16m8-8H4"
-            />
-          </svg>
-          Add New User
-        </button>
-      </div> */}
-
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
         <div className="bg-gray-50 p-4 md:p-6 rounded-xl border border-gray-200">
           <p className="text-gray-600 text-xs md:text-sm font-medium">
-            Total Users
+            Total Drivers
           </p>
           <p className="text-xl md:text-2xl font-bold text-gray-800 mt-1 md:mt-2">
             {users.length}
@@ -184,10 +144,18 @@ export default function Users() {
         </div> */}
         <div className="bg-gray-50 p-4 md:p-6 rounded-xl border border-gray-200">
           <p className="text-gray-600 text-xs md:text-sm font-medium">
-            Active Users
+            Active Drivers
           </p>
           <p className="text-xl md:text-2xl font-bold text-emerald-600 mt-1 md:mt-2">
             {users.filter((user) => user.status === "active").length}
+          </p>
+        </div>
+        <div className="bg-gray-50 p-4 md:p-6 rounded-xl border border-gray-200">
+          <p className="text-gray-600 text-xs md:text-sm font-medium">
+            Offline Drivers
+          </p>
+          <p className="text-xl md:text-2xl font-bold text-emerald-600 mt-1 md:mt-2">
+            {users.filter((user) => user.status === "inactive").length}
           </p>
         </div>
       </div>
@@ -196,10 +164,10 @@ export default function Users() {
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
         <div className="px-4 md:px-6 py-4 md:py-6 border-b border-gray-200">
           <h2 className="text-lg md:text-xl font-semibold text-gray-800">
-            All Users
+            All Drivers
           </h2>
           <p className="text-gray-600 text-xs md:text-sm mt-1">
-            Manage user accounts and permissions
+            Manage driver accounts
           </p>
         </div>
 
@@ -212,10 +180,19 @@ export default function Users() {
                     ID
                   </span>
                 </th>
-                
+                <th className="uppercase px-4 md:px-6 py-3 md:py-4 text-left">
+                  <span className="text-gray-600 font-medium text-xs md:text-sm tracking-wider">
+                    Business Name
+                  </span>
+                </th>
                 <th className="px-4 md:px-6 py-3 md:py-4 text-left">
                   <span className="text-gray-600 font-medium text-xs md:text-sm tracking-wider">
-                    USER
+                    LICENSE NO.
+                  </span>
+                </th>
+                <th className="px-4 md:px-6 py-3 md:py-4 text-left">
+                  <span className="text-gray-600 font-medium text-xs md:text-sm tracking-wider">
+                    NAME
                   </span>
                 </th>
                 <th className="px-4 md:px-6 py-3 md:py-4 text-left">
@@ -223,9 +200,22 @@ export default function Users() {
                     EMAIL
                   </span>
                 </th>
-                <th className="px-4 md:px-6 py-3 md:py-4 text-left">
+
+                <th className="px-4 md:px-6 py-3 md:py-4 text-left uppercase">
                   <span className="text-gray-600 font-medium text-xs md:text-sm tracking-wider">
-                    ROLE
+                    Phone Number
+                  </span>
+                </th>
+
+                <th className="px-4 md:px-6 py-3 md:py-4 text-left uppercase">
+                  <span className="text-gray-600 font-medium text-xs md:text-sm tracking-wider">
+                    Bus
+                  </span>
+                </th>
+
+                <th className="px-4 md:px-6 py-3 md:py-4 text-left uppercase">
+                  <span className="text-gray-600 font-medium text-xs md:text-sm tracking-wider">
+                    Plate No.
                   </span>
                 </th>
 
@@ -251,6 +241,20 @@ export default function Users() {
                     <span className="inline-flex items-center justify-center w-6 h-6 md:w-8 md:h-8 rounded-lg bg-gray-100 text-gray-700 font-medium text-xs md:text-sm">
                       {user.id}
                     </span>
+                  </td>
+                  <td className="px-4 md:px-6 py-3 md:py-4">
+                    <span className="inline-flex items-center justify-center w-6 h-6 md:w-8 md:h-8 rounded-lg bg-gray-100 text-gray-700 font-medium text-xs md:text-sm">
+                      {user.business_name}
+                    </span>
+                  </td>
+
+                  <td className="px-4 md:px-6 py-3 md:py-4">
+                    <div className="text-gray-700">
+                      <div className="font-medium text-sm md:text-base">
+                        {user.license_no}
+                      </div>
+                      {/* <div className="text-xs text-gray-500">Email address</div> */}
+                    </div>
                   </td>
                   
                   <td className="px-4 md:px-6 py-3 md:py-4">
@@ -285,24 +289,31 @@ export default function Users() {
                       {/* <div className="text-xs text-gray-500">Email address</div> */}
                     </div>
                   </td>
+                  
                   <td className="px-4 md:px-6 py-3 md:py-4">
-                    <span
-                      className={`inline-flex items-center px-2 py-1 md:px-3 md:py-1.5 rounded-full text-xs md:text-sm font-medium border ${
-                        roleColors[user.role.name] ||
-                        "bg-gray-50 text-gray-600 border-gray-200"
-                      }`}
-                    >
-                      <span
-                        className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full mr-1.5 md:mr-2 ${
-                          user.status === "active"
-                            ? "bg-emerald-500"
-                            : "bg-amber-500"
-                        }`}
-                      ></span>
+                    <div className="text-gray-700">
+                      <div className="font-medium text-sm md:text-base">
+                        {user.phone_no}
+                      </div>
+                      {/* <div className="text-xs text-gray-500">Email address</div> */}
+                    </div>
+                  </td>
+                  <td className="px-4 md:px-6 py-3 md:py-4">
+                    <div className="text-gray-700">
+                      <div className="font-medium text-sm md:text-base">
+                        {user.bus_name}
+                      </div>
+                      {/* <div className="text-xs text-gray-500">Email address</div> */}
+                    </div>
+                  </td>
 
-                      {user.role.name.charAt(0).toUpperCase() +
-                        user.role.name.slice(1)}
-                    </span>
+                  <td className="px-4 md:px-6 py-3 md:py-4">
+                    <div className="text-gray-700">
+                      <div className="font-medium text-sm md:text-base">
+                        {user.plate_no}
+                      </div>
+                      {/* <div className="text-xs text-gray-500">Email address</div> */}
+                    </div>
                   </td>
 
                   <td className="px-4 md:px-6 py-3 md:py-4">

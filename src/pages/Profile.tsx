@@ -275,6 +275,8 @@ export default function Profile() {
     );
   }
 
+  console.log(user.role.id)
+
   return (
     <div className="border py-2 mt-14 md:mt-0 rounded-sm">
       <Popup
@@ -315,6 +317,7 @@ export default function Profile() {
                   onChange={(e) => setName(e.target.value)}
                   className="w-full p-3.5 bg-gray-800/50 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-white"
                   placeholder="Enter your name"
+                  readOnly={user.role.id === 2}
                 />
               </div>
 
@@ -326,18 +329,20 @@ export default function Profile() {
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full p-3.5 bg-gray-800/50 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-white"
                   placeholder="Enter your email"
+                  readOnly={user.role.id === 2}
                 />
               </div>
-
-              <div className="flex justify-end pt-2">
-                <button
-                  onClick={handleUpdateProfile}
-                  disabled={loading}
-                  className="px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium flex items-center gap-2 transition-colors disabled:opacity-50"
-                >
-                  {loading ? "Saving..." : "Save Changes"}
-                </button>
-              </div>
+              {user.role.id !== 2 && (
+                <div className="flex justify-end pt-2">
+                  <button
+                    onClick={handleUpdateProfile}
+                    disabled={loading}
+                    className="px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium flex items-center gap-2 transition-colors disabled:opacity-50"
+                  >
+                    {loading ? "Saving..." : "Save Changes"}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
