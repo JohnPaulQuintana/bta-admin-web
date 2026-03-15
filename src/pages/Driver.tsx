@@ -57,7 +57,7 @@ export default function Drivers() {
   const addNotification = (message: string, type: "success" | "error") => {
     const id = Date.now();
     setNotifications((prev) => [...prev, { id, message, type }]);
-
+    setSelectedUser(null)
     // Auto remove after 5 seconds
     setTimeout(() => {
       setNotifications((prev) => prev.filter((n) => n.id !== id));

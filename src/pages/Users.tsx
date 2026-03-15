@@ -47,6 +47,7 @@ export default function Users() {
   const handleDelete = (id: number) => {
     setUsers(users.filter((user) => user.id !== id));
     setShowDelete(false);
+    setSelectedUser(null)
   };
 
   // const handleAdd = () => {
