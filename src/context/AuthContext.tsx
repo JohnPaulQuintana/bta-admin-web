@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, type ReactNode, useEffect } from "react";
 import axios from "axios";
+import toast from 'react-hot-toast';
 
 interface User {
   id: number;
@@ -33,9 +34,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const storedUser = localStorage.getItem("user");
 
     if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
-      setIsAuthenticated(true);
+      const parsedUser = JSON.parse(storedUser);
+      console.log(parsedUser)
+      // Check role
+      if (![1, 2, 3].includes(parsedUser.role_id)) {
+        toast.error("You don't have permission to access the admin dashboard");
+        logout(); // auto logout
+      } else {
+        setToken(storedToken);
+        setUser(parsedUser);
+        setIsAuthenticated(true);
+      }
     }
     setLoading(false); // done checking localStorage
   }, []);
@@ -44,6 +53,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const res = await axios.post(`${API_URL}/auth/login-admin`, { email, password });
       const { token, user } = res.data;
+      // console.log(user)
+      // Check role
+      if (![1, 2, 3].includes(user.role_id)) {
+        // console.log("YES")
+        toast.error("You don't have permission to access the admin dashboard");
+        return false; // don't log them in
+      }
 
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));

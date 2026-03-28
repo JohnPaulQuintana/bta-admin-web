@@ -281,13 +281,13 @@ export default function BusStop() {
         </div>
 
         {/* FORM */}
-        <div className="space-y-4 p-4 border rounded-xl shadow-sm bg-white">
+        <div className="space-y-4 p-4 border border-gray-400 rounded-xl shadow-sm bg-white">
           <input
             type="text"
             placeholder="Address"
             value={address}
             onChange={(e) => setAddress(e.target.value)}
-            className="w-full px-4 py-2 border rounded-lg"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
           />
           <div className="grid grid-cols-2 gap-3">
             <input
@@ -295,14 +295,14 @@ export default function BusStop() {
               value={selectedLocation?.lat || ""}
               readOnly
               placeholder="Latitude"
-              className="w-full px-4 py-2 border rounded-lg bg-gray-100"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100"
             />
             <input
               type="text"
               value={selectedLocation?.lng || ""}
               readOnly
               placeholder="Longitude"
-              className="w-full px-4 py-2 border rounded-lg bg-gray-100"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100"
             />
           </div>
 
