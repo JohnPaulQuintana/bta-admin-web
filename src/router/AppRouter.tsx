@@ -9,6 +9,7 @@ import Users from "../pages/Users";
 import Drivers from "../pages/Driver";
 import Profile from "../pages/Profile";
 import Business from "../pages/Busines";
+import BusStop from "../pages/BusStop";
 
 export default function AppRouter() {
   return (
@@ -30,6 +31,7 @@ export default function AppRouter() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="business" element={<Business />} />
           <Route path="buses" element={<Buses />} />
+          <Route path="stop" element={<BusStop />} />
           <Route path="users" element={<Users />} />
           <Route path="drivers" element={<Drivers />} />
           <Route path="profile" element={<Profile />} />

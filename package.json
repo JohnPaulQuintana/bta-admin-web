@@ -10,7 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@hello-pangea/dnd": "^18.0.1",
     "@heroicons/react": "^2.2.0",
+    "@react-google-maps/api": "^2.20.8",
     "axios": "^1.13.2",
     "lucide-react": "^0.556.0",
     "react": "^19.2.0",

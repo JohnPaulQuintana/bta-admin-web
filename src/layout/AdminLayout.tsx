@@ -10,6 +10,7 @@ import {
   UserCircleIcon,
   BuildingStorefrontIcon,
   ArrowRightOnRectangleIcon,
+  MapPinIcon,
 } from "@heroicons/react/24/outline";
 
 export default function AdminLayout() {
@@ -32,6 +33,11 @@ export default function AdminLayout() {
       name: "Buses",
       to: "/buses",
       icon: TruckIcon,
+    },
+    {
+      name: "Bus Stop",
+      to: "/stop",
+      icon: MapPinIcon,
     },
     {
       name: "Drivers",
@@ -83,9 +89,16 @@ export default function AdminLayout() {
         <nav className="flex-1 space-y-2">
           {links
             .filter((link) => {
-               // Hide Business and Users links if user is not admin
-              if ((link.name === "Business" || link.name === "Users") && user?.role?.name !== "admin")
+              const role = user?.role?.name;
+
+              const hiddenForAdmin = ["Bus Stop"];
+              const adminOnly = ["Business", "Users"];
+
+              if (hiddenForAdmin.includes(link.name) && role === "admin")
                 return false;
+              if (adminOnly.includes(link.name) && role !== "admin")
+                return false;
+
               return true;
             })
             .map((link) => {

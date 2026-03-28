@@ -91,6 +91,7 @@ export default function Buses() {
       setLoading(false);
     }
   };
+
   useEffect(() => {
     if (token) {
       fetchBuses();
@@ -201,6 +202,7 @@ export default function Buses() {
       const busPayload = {
         bus_name: editingBus.bus_name,
         bus_capacity: editingBus.bus_capacity,
+        license_plate: editingBus.plate_no,
         is_active: editingBus.is_active,
       };
 
@@ -543,14 +545,10 @@ export default function Buses() {
                     </td>
 
                     <td className="px-4 md:px-6 py-3 md:py-4">
-                      <span className="text-sm">
-                          {bus.bus_name}
-                      </span>
+                      <span className="text-sm">{bus.bus_name}</span>
                     </td>
                     <td className="px-4 md:px-6 py-3 md:py-4">
-                      <span className="text-sm">
-                          {bus.bus_capacity}
-                      </span>
+                      <span className="text-sm">{bus.bus_capacity}</span>
                     </td>
 
                     {user?.role.id !== 3 && (
@@ -715,29 +713,61 @@ export default function Buses() {
 
       {/* Add Bus Modal */}
       {showAdd && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-start lg:items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
           <div className="absolute inset-0" onClick={() => setShowAdd(false)} />
-          <div className="relative bg-white rounded-xl border border-gray-200 p-6 w-full max-w-md shadow-xl z-10">
-            <h2 className="text-lg md:text-xl font-bold text-gray-800 mb-6">
-              Add New Bus
-            </h2>
+          <div className="relative bg-white rounded-xl border border-gray-200 p-6 w-full max-w-3xl shadow-xl z-10">
+            <div className="mb-4">
+              <h2 className="text-lg md:text-xl font-bold text-green-800">
+                Register New Bus
+              </h2>
+              <p className="text-gray-600">
+                Register multiple driver, just scroll the driver information and
+                click add driver.
+              </p>
+            </div>
+            <div className="flex flex-col lg:flex-row gap-4">
+              {/* Bus */}
+              <div className="w-full lg:w-1/2 space-y-4 border border-gray-300 p-2 rounded-md">
+                <h1 className="font-bold text-gray-600">Bus Information</h1>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Bus Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Enter bus name"
+                    value={form.bus_name}
+                    onChange={(e) =>
+                      setForm({ ...form, bus_name: e.target.value })
+                    }
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                  />
+                </div>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Bus Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="Enter bus name"
-                  value={form.bus_name}
-                  onChange={(e) =>
-                    setForm({ ...form, bus_name: e.target.value })
-                  }
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
-                />
-              </div>
-              <div className="flex items-center gap-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Plate Number <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Enter Plate Number"
+                    value={form.license_plate}
+                    onChange={(e) => {
+                      const value = e.target.value;
+
+                      setForm((prev) => ({
+                        ...prev,
+                        license_plate: value,
+                        drivers: prev.drivers.map((d) => ({
+                          ...d,
+                          plate_no: value, // 🔥 sync all drivers
+                        })),
+                      }));
+                    }}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                  />
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Bus Capacity <span className="text-red-500">*</span>
@@ -747,14 +777,17 @@ export default function Buses() {
                     placeholder="Enter bus capacity"
                     value={form.bus_capacity}
                     min={1}
-                    max={30}
+                    max={50}
                     onChange={(e) =>
-                      setForm({ ...form, bus_capacity: Number(e.target.value) })
+                      setForm({
+                        ...form,
+                        bus_capacity: Number(e.target.value),
+                      })
                     }
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Capacity must be between 1 and 30 passengers.
+                    Capacity must be between 1 and 50 passengers.
                   </p>
                 </div>
 
@@ -772,19 +805,21 @@ export default function Buses() {
                     htmlFor="is_active_add"
                     className="text-sm text-gray-700"
                   >
-                    Active
+                    Active Bus
                   </label>
                 </div>
               </div>
 
-              <div className="space-y-4 max-h-[40vh] overflow-y-auto">
+              {/* Driver */}
+              <div className="w-full lg:w-1/2 space-y-2 max-h-[60vh] overflow-y-auto px-2">
+                <h1 className="font-bold text-gray-600">Driver Information</h1>
                 {form.drivers.map((driver, index) => (
                   <div
                     key={index}
-                    className="p-3 border border-gray-200 rounded-lg space-y-2 relative"
+                    className="p-3 border border-green-300 rounded-lg space-y-2 relative"
                   >
                     <h3 className="font-medium text-gray-700 text-sm">
-                      Assigned Driver {index + 1}
+                      Registered Driver {index + 1}
                     </h3>
 
                     {form.drivers.length > 1 && (
@@ -810,7 +845,7 @@ export default function Buses() {
                         newDrivers[index].name = e.target.value;
                         setForm({ ...form, drivers: newDrivers });
                       }}
-                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                     />
                     <input
                       type="text"
@@ -821,7 +856,7 @@ export default function Buses() {
                         newDrivers[index].license_no = e.target.value;
                         setForm({ ...form, drivers: newDrivers });
                       }}
-                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                     />
                     <input
                       type="email"
@@ -832,7 +867,7 @@ export default function Buses() {
                         newDrivers[index].email = e.target.value;
                         setForm({ ...form, drivers: newDrivers });
                       }}
-                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                     />
                     <input
                       type="text"
@@ -843,20 +878,20 @@ export default function Buses() {
                         newDrivers[index].phone_no = e.target.value;
                         setForm({ ...form, drivers: newDrivers });
                       }}
-                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                     />
 
-                    <input
+                    {/* <input
                       type="text"
                       placeholder="Plate No."
                       value={driver.plate_no}
-                      onChange={(e) => {
+                      onChange={() => {
                         const newDrivers = [...form.drivers];
-                        newDrivers[index].plate_no = e.target.value;
+                        newDrivers[index].plate_no = form.license_plate;
                         setForm({ ...form, drivers: newDrivers });
                       }}
-                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
-                    />
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                    /> */}
                     <input
                       type="password"
                       placeholder="Password"
@@ -866,7 +901,7 @@ export default function Buses() {
                         newDrivers[index].password = e.target.value;
                         setForm({ ...form, drivers: newDrivers });
                       }}
-                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                     />
                   </div>
                 ))}
@@ -874,10 +909,10 @@ export default function Buses() {
                 <button
                   type="button"
                   onClick={() =>
-                    setForm({
-                      ...form,
+                    setForm((prev) => ({
+                      ...prev,
                       drivers: [
-                        ...form.drivers,
+                        ...prev.drivers,
                         {
                           role: "driver",
                           business_id: user?.business_id,
@@ -886,11 +921,11 @@ export default function Buses() {
                           email: "",
                           phone_no: "",
                           bus_id: "",
-                          plate_no: "",
+                          plate_no: prev.license_plate,
                           password: "",
                         },
                       ],
-                    })
+                    }))
                   }
                   className="text-green-600 text-sm hover:underline"
                 >
@@ -925,8 +960,8 @@ export default function Buses() {
             onClick={() => setShowEdit(false)}
           />
           <div className="relative bg-white rounded-xl border border-gray-200 p-6 w-full max-w-md shadow-xl z-10">
-            <h2 className="text-lg md:text-xl font-bold text-gray-800 mb-6">
-              Edit Bus
+            <h2 className="text-lg md:text-xl font-bold text-green-800 mb-6">
+              Edit Bus Inforamtion
             </h2>
 
             <div className="space-y-4">
@@ -1015,7 +1050,7 @@ export default function Buses() {
               </button>
               <button
                 onClick={handleEditSubmit}
-                className="px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-all duration-300"
+                className="px-4 py-2.5 rounded-lg bg-green-600 hover:bg-green-700 text-white font-medium transition-all duration-300"
               >
                 Update Bus
               </button>

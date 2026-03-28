@@ -335,27 +335,36 @@ export default function BusinessTable() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
             <h2 className="text-lg font-bold mb-4">Add New Business</h2>
-            <input
-              type="text"
-              placeholder="Business Name"
-              className="w-full border p-2 rounded-lg mb-2"
-              value={newBusinessName}
-              onChange={(e) => setNewBusinessName(e.target.value)}
-            />
-            <input
-              type="text"
-              placeholder="Operator Name"
-              className="w-full border p-2 rounded-lg mb-2"
-              value={operatorName}
-              onChange={(e) => setOperatorName(e.target.value)}
-            />
-            <input
-              type="email"
-              placeholder="Operator Email"
-              className="w-full border p-2 rounded-lg mb-4"
-              value={operatorEmail}
-              onChange={(e) => setOperatorEmail(e.target.value)}
-            />
+            <div>
+              <label htmlFor="">Business Name</label>
+              <input
+                type="text"
+                placeholder="Business Name"
+                className="w-full border border-green-400 p-2 rounded-lg mb-2"
+                value={newBusinessName}
+                onChange={(e) => setNewBusinessName(e.target.value)}
+              />
+            </div>
+            <div>
+              <label htmlFor="">Operator Name</label>
+              <input
+                type="text"
+                placeholder="Operator Name"
+                className="w-full border border-green-400 p-2 rounded-lg mb-2"
+                value={operatorName}
+                onChange={(e) => setOperatorName(e.target.value)}
+              />
+            </div>
+            <div>
+              <label htmlFor="">Operator Email</label>
+              <input
+                type="email"
+                placeholder="Operator Email"
+                className="w-full border border-green-400 p-2 rounded-lg mb-4"
+                value={operatorEmail}
+                onChange={(e) => setOperatorEmail(e.target.value)}
+              />
+            </div>
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setShowAdd(false)}
@@ -379,7 +388,7 @@ export default function BusinessTable() {
       {showEdit && editBusiness && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
-            <h2 className="text-lg font-bold mb-4">Edit Business</h2>
+            <h2 className="text-green-700 uppercase text-lg font-bold mb-4">Edit Business</h2>
             <div>
               <label htmlFor="">Business Name</label>
               <input
@@ -420,7 +429,7 @@ export default function BusinessTable() {
               <button
                 onClick={handleUpdateBusiness}
                 disabled={submitting}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
               >
                 {submitting ? "Saving..." : "Update"}
               </button>
