@@ -275,7 +275,10 @@ export default function BusStop() {
             mapContainerStyle={{ width: "100%", height: "100%" }}
             center={center}
             zoom={12}
-            onLoad={(map) => (mapRef.current = map)}
+            // onLoad={(map) => (mapRef.current = map)}
+            onLoad={(map) => {
+              mapRef.current = map;
+            }}
             onClick={handleMapClick}
           />
         </div>
