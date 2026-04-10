@@ -539,7 +539,7 @@ export default function Buses() {
                           </svg>
                         </div>
                         <span className="font-medium text-green-800 text-sm md:text-base">
-                          {`https://ex-en.tech/api/buses/${bus.id}/location`}
+                          {`https://gobus.exousia.online/public/api/buses/${bus.id}/location`}
                         </span>
                       </div>
                     </td>

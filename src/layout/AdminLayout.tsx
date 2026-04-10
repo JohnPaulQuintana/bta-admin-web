@@ -11,6 +11,7 @@ import {
   BuildingStorefrontIcon,
   ArrowRightOnRectangleIcon,
   MapPinIcon,
+  ChartBarIcon
 } from "@heroicons/react/24/outline";
 
 export default function AdminLayout() {
@@ -54,6 +55,16 @@ export default function AdminLayout() {
       to: "/profile",
       icon: UserCircleIcon,
     },
+    {
+      name: "Analytics",
+      to: "/analytic",
+      icon: ChartBarIcon,
+    },
+    {
+      name: "Analytics Section",
+      to: "/operator/analytic",
+      icon: ChartBarIcon,
+    },
   ];
 
   // const currentPage = links.find((link) => link.to === location.pathname)?.name || "";
@@ -91,8 +102,8 @@ export default function AdminLayout() {
             .filter((link) => {
               const role = user?.role?.name;
 
-              const hiddenForAdmin = ["Bus Stop"];
-              const adminOnly = ["Business", "Users"];
+              const hiddenForAdmin = ["Bus Stop", "Analytics Section"];
+              const adminOnly = ["Business", "Users", "Analytics"];
 
               if (hiddenForAdmin.includes(link.name) && role === "admin")
                 return false;
@@ -145,7 +156,7 @@ export default function AdminLayout() {
         {/* Desktop Header */}
         <header className="hidden md:flex items-center justify-between bg-white text-white p-4 border-b border-green-600/30">
           <h1 className="text-2xl font-bold text-green-600">
-            {"Smart Bus Tracker"}
+            {"GoBus - Bus Tracker"}
           </h1>
 
           {/* Profile Circle */}
