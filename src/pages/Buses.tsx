@@ -35,6 +35,9 @@ export default function Buses() {
   const [showEdit, setShowEdit] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 5; // Number of buses per page
+  const [busStops, setBusStops] = useState<
+    { id: number; name: string; latitude: number; longitude: number }[]
+  >([]);
 
   const { token, user } = useAuth();
 
@@ -92,8 +95,37 @@ export default function Buses() {
     }
   };
 
+  // Fetch all bus stops from server
+  const fetchBusStops = async () => {
+    try {
+      const res = await fetch(`${API_URL}/stops`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to fetch bus stops");
+
+      let stops = (await res.json()).data || [];
+
+      // Reorder based on localStorage
+      //   const savedOrder = localStorage.getItem("busStopOrder");
+      //   if (savedOrder) {
+      //     const order = JSON.parse(savedOrder) as number[];
+      //     stops.sort(
+      //       (a: { id: number }, b: { id: number }) =>
+      //         order.indexOf(a.id) - order.indexOf(b.id),
+      //     );
+      //   }
+      stops.sort((a: { id: number }, b: { id: number }) => a.id - b.id);
+      console.log(stops.length);
+      setBusStops(stops);
+    } catch (err: any) {
+      console.error(err);
+      addNotification(err.message, "error");
+    }
+  };
+
   useEffect(() => {
     if (token) {
+      fetchBusStops();
       fetchBuses();
     }
   }, [token]);
@@ -115,6 +147,12 @@ export default function Buses() {
   };
 
   const handleAddSubmit = async () => {
+    // console.log(busStops.length)
+    if (busStops.length <= 0) {
+      addNotification("Please register a bus stop first before adding a new bus.", "error");
+      setShowAdd(false);
+      return;
+    }
     if (!form.bus_name.trim()) {
       addNotification("Please fill in all required fields", "error");
       setShowAdd(false);

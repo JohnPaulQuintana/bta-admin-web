@@ -50,6 +50,14 @@ export default function BusStop() {
   const [isReorderModalOpen, setIsReorderModalOpen] = useState(false);
   const [modalBusStops, setModalBusStops] = useState<typeof busStops>([]);
 
+  const [deleteTarget, setDeleteTarget] = useState<null | {
+    id: number;
+    name: string;
+  }>(null);
+
+  const [deleting, setDeleting] = useState(false);
+  const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
+
   // Add notification
   const addNotification = (message: string, type: "success" | "error") => {
     const id = Date.now();
@@ -71,16 +79,16 @@ export default function BusStop() {
       let stops = (await res.json()).data || [];
 
       // Reorder based on localStorage
-    //   const savedOrder = localStorage.getItem("busStopOrder");
-    //   if (savedOrder) {
-    //     const order = JSON.parse(savedOrder) as number[];
-    //     stops.sort(
-    //       (a: { id: number }, b: { id: number }) =>
-    //         order.indexOf(a.id) - order.indexOf(b.id),
-    //     );
-    //   }
-    stops.sort((a: { id: number; }, b: { id: number; }) => a.id - b.id);
-      console.log(stops)
+      //   const savedOrder = localStorage.getItem("busStopOrder");
+      //   if (savedOrder) {
+      //     const order = JSON.parse(savedOrder) as number[];
+      //     stops.sort(
+      //       (a: { id: number }, b: { id: number }) =>
+      //         order.indexOf(a.id) - order.indexOf(b.id),
+      //     );
+      //   }
+      stops.sort((a: { id: number }, b: { id: number }) => a.id - b.id);
+      console.log(stops);
       setBusStops(stops);
     } catch (err: any) {
       console.error(err);
@@ -92,6 +100,13 @@ export default function BusStop() {
     if (!token) return;
     fetchBusStops();
   }, [token]);
+
+  const ensureInfoWindow = () => {
+    if (!infoWindowRef.current && window.google?.maps) {
+      infoWindowRef.current = new google.maps.InfoWindow();
+    }
+    return infoWindowRef.current;
+  };
 
   // Add markers for all bus stops when busStops or map changes
   useEffect(() => {
@@ -108,12 +123,43 @@ export default function BusStop() {
         map: mapRef.current!,
         title: stop.name,
       });
+
+      // CLICK EVENT
+      marker.addListener("click", () => {
+        console.log("Marker clicked:", stop.name);
+        const infoWindow = ensureInfoWindow();
+        if (!infoWindow || !mapRef.current) return;
+
+        infoWindow.close();
+
+        infoWindow.setContent(`
+          <div style="min-width:180px">
+            <h3 style="margin:0;font-size:14px;font-weight:bold;">
+              ${stop.name}
+            </h3>
+            <p style="margin:4px 0;font-size:12px;">
+              Lat: ${stop.latitude.toFixed(5)} <br/>
+              Lng: ${stop.longitude.toFixed(5)}
+            </p>
+          </div>
+        `);
+
+        infoWindow.open({
+          anchor: marker,
+          map: mapRef.current,
+        });
+      });
+
       busStopMarkersRef.current.push(marker);
     });
   }, [busStops]);
 
   const handleMapClick = (e: google.maps.MapMouseEvent) => {
     if (!e.latLng || !mapRef.current) return;
+
+    if (infoWindowRef.current) {
+      infoWindowRef.current.close();
+    }
 
     const lat = e.latLng.lat();
     const lng = e.latLng.lng();
@@ -231,6 +277,35 @@ export default function BusStop() {
     } catch (err: any) {
       console.error(err);
       addNotification(err.message, "error");
+    }
+  };
+
+  const handleDeleteStop = async () => {
+    if (!deleteTarget) return;
+
+    try {
+      setDeleting(true);
+      console.log(`Target ID: ${deleteTarget.id}`);
+      const res = await fetch(`${API_URL}/stops/${deleteTarget.id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to delete stop");
+
+      addNotification("Bus stop deleted successfully", "success");
+
+      // remove locally
+      setBusStops((prev) => prev.filter((s) => s.id !== deleteTarget.id));
+
+      setDeleteTarget(null);
+    } catch (err: any) {
+      addNotification(err.message, "error");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -360,16 +435,35 @@ export default function BusStop() {
                           <div
                             ref={provided.innerRef}
                             {...provided.draggableProps}
-                            {...provided.dragHandleProps}
-                            className={`p-3 border-l-4 border-green-600 rounded flex items-center font-medium ${
+                            className={`p-3 border-l-4 border-green-600 rounded flex items-center justify-between font-medium ${
                               snapshot.isDragging
                                 ? "bg-green-200"
                                 : "bg-green-100"
                             }`}
                           >
-                            {/* Number + Name */}
-                            <span className="text-green-800 font-bold mr-2">{index + 1}.</span>
-                            <span className="text-green-800">{stop.name}</span>
+                            <div
+                              className="flex items-center gap-2"
+                              {...provided.dragHandleProps}
+                            >
+                              <span className="text-green-800 font-bold">
+                                {index + 1}.
+                              </span>
+                              <span className="text-green-800">
+                                {stop.name}
+                              </span>
+                            </div>
+
+                            <button
+                              onClick={() =>
+                                setDeleteTarget({
+                                  id: stop.id,
+                                  name: stop.name,
+                                })
+                              }
+                              className="text-red-600 hover:text-red-800 font-bold px-2"
+                            >
+                              ✕
+                            </button>
                           </div>
                         )}
                       </Draggable>
@@ -392,6 +486,38 @@ export default function BusStop() {
                 onClick={handleSaveReorder}
               >
                 Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-sm shadow-lg">
+            <h2 className="text-lg font-bold text-red-600 mb-2">
+              Delete Bus Stop
+            </h2>
+
+            <p className="text-gray-700 mb-4">
+              Are you sure you want to delete{" "}
+              <span className="font-semibold">{deleteTarget.name}</span>?
+            </p>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={handleDeleteStop}
+                disabled={deleting}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+              >
+                {deleting ? "Deleting..." : "Delete"}
               </button>
             </div>
           </div>
