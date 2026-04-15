@@ -12,6 +12,7 @@ import Business from "../pages/Busines";
 import BusStop from "../pages/BusStop";
 import Analytics from "../pages/Analytics";
 import OperatorAnalytics from "../pages/OperatorAnalytics";
+import BusLocation from "../pages/BusLocation";
 
 export default function AppRouter() {
   return (
@@ -39,6 +40,7 @@ export default function AppRouter() {
           <Route path="profile" element={<Profile />} />
           <Route path="analytic" element={<Analytics />} />
           <Route path="operator/analytic" element={<OperatorAnalytics />} />
+          <Route path="emergency" element={<BusLocation />} />
         </Route>
 
         {/* Catch-all */}

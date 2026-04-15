@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Bars3Icon,
   XMarkIcon,
@@ -11,14 +11,17 @@ import {
   BuildingStorefrontIcon,
   ArrowRightOnRectangleIcon,
   MapPinIcon,
-  ChartBarIcon
+  ChartBarIcon,
+  BellAlertIcon,
 } from "@heroicons/react/24/outline";
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 export default function AdminLayout() {
   const { logout, user } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
+  const [emergencyCount, setEmergencyCount] = useState(0);
   const links = [
     {
       name: "Dashboard",
@@ -65,12 +68,42 @@ export default function AdminLayout() {
       to: "/operator/analytic",
       icon: ChartBarIcon,
     },
+    {
+      name: "Emergency",
+      to: "/emergency",
+      icon: BellAlertIcon,
+    },
   ];
 
   // const currentPage = links.find((link) => link.to === location.pathname)?.name || "";
 
   // Get first letter of user name
   const profileLetter = user?.name?.[0]?.toUpperCase() || "?";
+
+  const fetchEmergencyCount = async () => {
+    try {
+      const res = await fetch(`${API_URL}/emergency`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      if (!res.ok) return;
+
+      const data = await res.json();
+      setEmergencyCount((data.data || []).length);
+    } catch (err) {
+      console.error(err);
+      setEmergencyCount(0);
+    }
+  };
+
+  useEffect(() => {
+    fetchEmergencyCount();
+
+    const interval = setInterval(fetchEmergencyCount, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="w-full flex min-h-screen bg-[#121414]">
@@ -102,7 +135,7 @@ export default function AdminLayout() {
             .filter((link) => {
               const role = user?.role?.name;
 
-              const hiddenForAdmin = ["Bus Stop", "Analytics Section"];
+              const hiddenForAdmin = ["Bus Stop", "Analytics Section", "Emergency"];
               const adminOnly = ["Business", "Users", "Analytics"];
 
               if (hiddenForAdmin.includes(link.name) && role === "admin")
@@ -128,7 +161,17 @@ export default function AdminLayout() {
                   onClick={() => setSidebarOpen(false)}
                 >
                   <Icon className="w-5 h-5" />
-                  <span>{link.name}</span>
+                  {/* <span>{link.name}</span> */}
+                  <div className="flex items-center justify-between w-full">
+                    <span>{link.name}</span>
+
+                    {/* 🚨 Emergency badge */}
+                    {link.name === "Emergency" && emergencyCount > 0 && (
+                      <span className="ml-2 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full">
+                        {emergencyCount}
+                      </span>
+                    )}
+                  </div>
                 </Link>
               );
             })}
