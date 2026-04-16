@@ -17,7 +17,7 @@ import {
   Map,
   Gauge,
 //   User,
-  TrendingUp,
+  // TrendingUp,
   Activity,
 } from "lucide-react";
 
@@ -111,15 +111,15 @@ export default function OperatorAnalytics() {
   const avgPassengersPerBus =
     summary?.buses ? Math.round(summary.passengers / summary.buses) : 0;
 
-  const fleetEfficiency = summary?.buses
-    ? (summary.distance / summary.buses).toFixed(2)
-    : 0;
+  // const fleetEfficiency = summary?.buses
+  //   ? (summary.distance / summary.buses).toFixed(2)
+  //   : 0;
 
-  const mostActiveBus = buses.length
-    ? buses.reduce((max, b) =>
-        b.passengers > (max?.passengers || 0) ? b : max
-      )
-    : null;
+  // const mostActiveBus = buses.length
+  //   ? buses.reduce((max, b) =>
+  //       b.passengers > (max?.passengers || 0) ? b : max
+  //     )
+  //   : null;
 
   return (
     <div className="min-h-screen bg-[#070b14] text-white p-6">
@@ -152,7 +152,7 @@ export default function OperatorAnalytics() {
             <KPI icon={<Users size={32} />} label="Passengers" value={summary.passengers} />
             <KPI icon={<Map size={32} />} label="Distance" value={`${summary.distance} km`} />
             <KPI icon={<Gauge size={32} />} label="Speed" value={summary.speed} />
-            <KPI icon={<TrendingUp size={32} />} label="Efficiency" value={`${fleetEfficiency} km/bus`} />
+            {/* <KPI icon={<TrendingUp size={32} />} label="Efficiency" value={`${fleetEfficiency} km/bus`} /> */}
           </div>
 
           {/* CHARTS */}
@@ -203,7 +203,7 @@ export default function OperatorAnalytics() {
           </div>
 
           {/* BOTTOM */}
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
             <Card title="Speed Monitoring" icon={<Gauge size={16} />}>
               <ResponsiveContainer width="100%" height={240}>
@@ -233,7 +233,7 @@ export default function OperatorAnalytics() {
               </div>
             </Card>
 
-            <Card title="Most Active Bus" icon={<TrendingUp size={16} />}>
+            {/* <Card title="Most Active Bus" icon={<TrendingUp size={16} />}>
               <div className="text-center mt-12">
                 <p className="text-lg font-semibold">
                   {mostActiveBus?.name || "N/A"}
@@ -242,7 +242,7 @@ export default function OperatorAnalytics() {
                   {mostActiveBus?.passengers || 0} passengers
                 </p>
               </div>
-            </Card>
+            </Card> */}
 
           </div>
         </>
