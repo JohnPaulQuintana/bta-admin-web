@@ -55,16 +55,34 @@ type FilterType = "today" | "week" | "month";
 function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
 
+  const data = payload[0]?.payload; // full row data
+
+  console.log(data)
   return (
     <div className="bg-[#0b1220] border border-[#22304d] rounded-lg p-3 shadow-xl">
-      <p className="text-xs text-gray-400 mb-1">{label}</p>
+      <p className="text-xs text-gray-400 mb-2 font-semibold">{label}</p>
 
-      {payload.map((p: any, i: number) => (
-        <div key={i} className="flex justify-between gap-4 text-sm">
-          <span className="text-gray-400">{p.name}</span>
-          <span className="text-white font-semibold">{p.value}</span>
+      {/* Show ALL values explicitly */}
+      {"passengers" in data && (
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-400">Passengers: </span>
+          <span className="text-white font-semibold">{data.passengers}</span>
         </div>
-      ))}
+      )}
+
+      {"distance" in data && (
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-400">Distance: </span>
+          <span className="text-white font-semibold">{data.distance} km</span>
+        </div>
+      )}
+
+      {"speed" in data && (
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-400">Speed: </span>
+          <span className="text-white font-semibold">{data.speed}</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -78,6 +96,12 @@ export default function OperatorAnalytics() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [buses, setBuses] = useState<BusAnalytics[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const formattedBuses = buses.map((b, i) => ({
+    ...b,
+    label: `${b.name} #${i + 1}`,
+  }));
+
 
   const fetchData = async (silent = false) => {
     try {
@@ -122,7 +146,7 @@ export default function OperatorAnalytics() {
   //   : null;
 
   return (
-    <div className="min-h-screen bg-[#070b14] text-white p-6">
+    <div className="min-h-screen mt-10 md:mt-0 bg-[#070b14] text-white p-6">
 
       {/* HEADER */}
       <div className="flex justify-between items-center mb-8">
@@ -161,9 +185,9 @@ export default function OperatorAnalytics() {
             {/* PASSENGERS */}
             <Card title="Passenger Distribution" icon={<Users size={16} />}>
               <ResponsiveContainer width="100%" height={260}>
-                <BarChart data={buses} barSize={30}>
+                <BarChart data={formattedBuses} barSize={30}>
                   <CartesianGrid stroke="#1f2a44" opacity={0.4} />
-                  <XAxis dataKey="name" stroke="#94a3b8" />
+                  <XAxis dataKey="label" stroke="#94a3b8" />
                   <YAxis stroke="#94a3b8" />
                   <Tooltip content={<CustomTooltip />} />
 
@@ -183,9 +207,9 @@ export default function OperatorAnalytics() {
             {/* DISTANCE */}
             <Card title="Fleet Movement" icon={<Map size={16} />}>
               <ResponsiveContainer width="100%" height={260}>
-                <LineChart data={buses}>
+                <LineChart data={formattedBuses}>
                   <CartesianGrid stroke="#1f2a44" opacity={0.4} />
-                  <XAxis dataKey="name" stroke="#94a3b8" />
+                  <XAxis dataKey="label" stroke="#94a3b8" />
                   <YAxis stroke="#94a3b8" />
                   <Tooltip content={<CustomTooltip />} />
 
@@ -207,8 +231,8 @@ export default function OperatorAnalytics() {
 
             <Card title="Speed Monitoring" icon={<Gauge size={16} />}>
               <ResponsiveContainer width="100%" height={240}>
-                <BarChart data={buses}>
-                  <XAxis dataKey="name" stroke="#94a3b8" />
+                <BarChart data={formattedBuses}>
+                  <XAxis dataKey="label" stroke="#94a3b8" />
                   <YAxis stroke="#94a3b8" />
                   <Tooltip content={<CustomTooltip />} />
 
