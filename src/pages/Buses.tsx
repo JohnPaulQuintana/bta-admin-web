@@ -146,15 +146,55 @@ export default function Buses() {
     }
   };
 
+  const validateForm = (form: any) => {
+    // 🚨 Business info
+    if (!form.bus_name?.trim()) return "Bus name is required";
+    if (!form.bus_capacity || form.bus_capacity <= 0)
+      return "Bus capacity must be greater than 0";
+    if (!form.license_plate?.trim()) return "License plate is required";
+
+    // 🚨 Drivers must exist
+    if (!form.drivers || form.drivers.length === 0)
+      return "At least 1 driver is required";
+
+    // 🚨 Validate each driver
+    for (let i = 0; i < form.drivers.length; i++) {
+      const d = form.drivers[i];
+
+      if (!d.name?.trim()) return `Driver ${i + 1}: name is required`;
+      if (!d.email?.trim()) return `Driver ${i + 1}: email is required`;
+      if (!d.phone_no?.trim()) return `Driver ${i + 1}: phone is required`;
+      if (!d.password?.trim()) return `Driver ${i + 1}: password is required`;
+      if (!d.license_no?.trim())
+        return `Driver ${i + 1}: license number is required`;
+      if (!d.bus_id?.trim()) return `Driver ${i + 1}: bus ID is required`;
+      if (!d.plate_no?.trim())
+        return `Driver ${i + 1}: plate number is required`;
+      if (!d.role?.trim()) return `Driver ${i + 1}: role is required`;
+    }
+
+    return null;
+  };
+
   const handleAddSubmit = async () => {
     // console.log(busStops.length)
     if (busStops.length <= 0) {
-      addNotification("Please register a bus stop first before adding a new bus.", "error");
+      addNotification(
+        "Please register a bus stop first before adding a new bus.",
+        "error",
+      );
       setShowAdd(false);
       return;
     }
-    if (!form.bus_name.trim()) {
-      addNotification("Please fill in all required fields", "error");
+    // if (!form.bus_name.trim()) {
+    //   addNotification("Please fill in all required fields", "error");
+    //   setShowAdd(false);
+    //   return;
+    // }
+    const error = validateForm(form);
+
+    if (error) {
+      addNotification(error, "error");
       setShowAdd(false);
       return;
     }
